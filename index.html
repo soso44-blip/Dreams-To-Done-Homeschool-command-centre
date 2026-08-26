@@ -1344,8 +1344,12 @@ kbd {
   .fab svg { width: 25px; height: 25px; }
   .fab:active { transform: scale(.94); }
 
-  /* Modals become bottom sheets */
-  .scrim { padding: 0; align-items: flex-end; }
+  /* Modals become bottom sheets — but NOT the full-screen onboarding scrim,
+     which must stay top-aligned and scrollable (flex-end clips + freezes its
+     top on phones where the content is taller than the visible viewport). */
+  .scrim:not(.onb-scrim) { padding: 0; align-items: flex-end; }
+  .onb-scrim { align-items: stretch; -webkit-overflow-scrolling: touch; }
+  .onb { min-height: 100%; }
   .modal {
     width: 100%; max-width: 100%; max-height: 92vh; max-height: 92dvh;
     border-radius: var(--r-xl) var(--r-xl) 0 0; margin: 0;
@@ -7004,8 +7008,15 @@ function startOnboarding(force) {
           ${body()}
         </div>`;
         bind();
-        const f = c.modal.querySelector("input,select,button.btn-primary");
-        setTimeout(() => f && f.focus(), 60);
+        // Don't auto-focus on the welcome screen (step 0) — it's a landing
+        // screen, and focusing a lower CTA scrolls its headline off the top on
+        // short phones. Focus form fields on later steps, and always start each
+        // step scrolled to the top.
+        const f = st.step === 0 ? null : c.modal.querySelector("input,select,button.btn-primary");
+        setTimeout(() => {
+          if (f) f.focus({ preventScroll: true });
+          if (c.scrim) c.scrim.scrollTop = 0;
+        }, 60);
       }
 
       function body() {
